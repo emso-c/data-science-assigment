@@ -2,7 +2,6 @@ import pandas as pd
 import os
 from tqdm import tqdm
 
-
 INPUT_PATH = 'data'
 OUTPUT_PATH = 'output'
 WEATHER_PRE_FILENAME = "weather_20180101_20211121.csv"
@@ -44,30 +43,19 @@ def getAvgTemperatureOfRow(df, row):
         return prev_temp
     return (prev_temp + next_temp) / 2
 
-
 # read csv data
 wpre_df = pd.read_csv(getInput(WEATHER_PRE_FILENAME))
 wpost_df = pd.read_csv(getInput(WEATHER_POST_FILENAME))
 tpre_df = pd.read_csv(getInput(TARGET_PRE_FILENAME))
 tpost_df = pd.read_csv(getInput(TARGET_POST_FILENAME))
 
-
 # merge pre and post data
 w_df = pd.concat([wpre_df, wpost_df])
 t_df = pd.concat([tpre_df, tpost_df])
 
-
 # update date type from datetime to string
 w_df['dt'] = w_df['dt'].astype(str)
 t_df['dt'] = t_df['dt'].astype(str)
-
-# fill the null temperatures with average temperature of the neighbooring dates of the same city.
-nulls = getNulls(w_df)
-for index, row in tqdm(nulls.iterrows(), total=len(nulls), desc="Bosluklar dolduruluyor..."):
-    avg_temp = getAvgTemperatureOfRow(w_df, row)
-    if avg_temp is None:
-        continue
-    w_df.loc[index, 'temperature'] = avg_temp
 
 # floor times
 w_df['dt'] = pd.Series(pd.to_datetime(w_df.dt), name='dt').dt.floor('H')
@@ -76,23 +64,21 @@ t_df['dt'] = pd.Series(pd.to_datetime(t_df.dt), name='dt').dt.floor('H')
 # merge target data
 df = w_df.merge(t_df, on='dt', how='left')
 
+# fill the null temperatures with average temperature of the neighbooring dates of the same city.
+nulls = getNulls(df)
+for index, row in tqdm(nulls.iterrows(), total=len(nulls), desc="Bosluklar dolduruluyor..."):
+    avg_temp = getAvgTemperatureOfRow(df, row)
+    if avg_temp is None:
+        continue
+    df.loc[index, 'temperature'] = avg_temp
+
 # group data
 gw = df.groupby(['dt', 'target', 'metcities_id']).agg({'temperature':'mean'})
 
+# save data
+gw.to_csv(getOutput('weather_target_merged.csv'))
 
-#print(df.head(10))
-#print(df.tail(10))
-#print(df.isnull().sum())
-print(df[df.isnull().any(axis=1)])
-print(df.head(10))
-print(df.tail(10))
-print("=================================================")
-print("=================================================")
-print("=================================================")
-print("=================================================")
-print("=================================================")
 print(gw[gw.isnull().any(axis=1)])
 print(gw.head(10))
 print(gw.tail(10))
-#print(gw.isnull())
 
