@@ -1,5 +1,6 @@
 import pandas as pd
 import os
+from tqdm import tqdm
 
 
 INPUT_PATH = 'data'
@@ -16,13 +17,13 @@ def getOutput(filename):
 
 def getNulls(df):
     return df[df.isnull().any(axis=1)]
-def _getPreviousTemperatureOfRow(df, row, offset=-1):
+def _getPreviousTemperatureOfRow(df, row):
     prev_rows = df[(df['metcities_id'] == row['metcities_id']) & (df['dt'] < row['dt'])]
     prev_temps = prev_rows['temperature']
     if prev_temps.size == 0:
         return None
-    if not prev_temps.iloc[-offset]:
-        return _getPreviousTemperatureOfRow(df, prev_rows.iloc[-1], offset+1)
+    if not prev_temps.iloc[-1]:
+        return _getPreviousTemperatureOfRow(df, prev_rows.iloc[-1])
     return prev_temps.iloc[-1]
 def _getNextTemperatureOfRow(df, row, offset=1):
     next_rows = df[(df['metcities_id'] == row['metcities_id']) & (df['dt'] > row['dt'])]
@@ -31,7 +32,7 @@ def _getNextTemperatureOfRow(df, row, offset=1):
         return None
     if not next_temps.iloc[-offset]:
         return _getNextTemperatureOfRow(df, next_rows.iloc[-1], offset+1)
-    return next_temps.iloc[-1]
+    return next_temps.iloc[-offset]
 def getAvgTemperatureOfRow(df, row):
     prev_temp = _getPreviousTemperatureOfRow(df, row)
     next_temp = _getNextTemperatureOfRow(df, row)
@@ -60,8 +61,9 @@ t_df = pd.concat([tpre_df, tpost_df])
 w_df['dt'] = w_df['dt'].astype(str)
 t_df['dt'] = t_df['dt'].astype(str)
 
+# fill the null temperatures with average temperature of the neighbooring dates of the same city.
 nulls = getNulls(w_df)
-for index, row in nulls.iterrows():
+for index, row in tqdm(nulls.iterrows(), total=len(nulls), desc="Bosluklar dolduruluyor..."):
     avg_temp = getAvgTemperatureOfRow(w_df, row)
     if avg_temp is None:
         continue
