@@ -61,16 +61,11 @@ w_df['dt'] = w_df['dt'].astype(str)
 t_df['dt'] = t_df['dt'].astype(str)
 
 nulls = getNulls(w_df)
-print(nulls.count()[0])
-ctr = 0
 for index, row in nulls.iterrows():
     avg_temp = getAvgTemperatureOfRow(w_df, row)
     if avg_temp is None:
         continue
     w_df.loc[index, 'temperature'] = avg_temp
-    ctr += 1
-    if ctr % 100 == 0: print(ctr)
-print(getNulls(w_df).count()[0])
 
 # floor times
 w_df['dt'] = pd.Series(pd.to_datetime(w_df.dt), name='dt').dt.floor('H')
@@ -79,12 +74,9 @@ t_df['dt'] = pd.Series(pd.to_datetime(t_df.dt), name='dt').dt.floor('H')
 # merge target data
 df = w_df.merge(t_df, on='dt', how='left')
 
-
 # group data
 gw = df.groupby(['dt', 'target', 'metcities_id']).agg({'temperature':'mean'})
 
-
-gw.to_csv(getOutput('gw_final.csv'), index=False)
 
 #print(df.head(10))
 #print(df.tail(10))
@@ -92,7 +84,6 @@ gw.to_csv(getOutput('gw_final.csv'), index=False)
 print(df[df.isnull().any(axis=1)])
 print(df.head(10))
 print(df.tail(10))
-print("=================================================")
 print("=================================================")
 print("=================================================")
 print("=================================================")
