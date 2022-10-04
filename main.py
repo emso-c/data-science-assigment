@@ -24,14 +24,14 @@ def _getPreviousTemperatureOfRow(df, row):
     if not prev_temps.iloc[-1]:
         return _getPreviousTemperatureOfRow(df, prev_rows.iloc[-1])
     return prev_temps.iloc[-1]
-def _getNextTemperatureOfRow(df, row, offset=1):
+def _getNextTemperatureOfRow(df, row):
     next_rows = df[(df['metcities_id'] == row['metcities_id']) & (df['dt'] > row['dt'])]
     next_temps = next_rows['temperature']
     if next_temps.size == 0:
         return None
-    if not next_temps.iloc[-offset]:
-        return _getNextTemperatureOfRow(df, next_rows.iloc[-1], offset+1)
-    return next_temps.iloc[-offset]
+    if not next_temps.iloc[-1]:
+        return _getNextTemperatureOfRow(df, next_rows.iloc[-1])
+    return next_temps.iloc[-1]
 def getAvgTemperatureOfRow(df, row):
     prev_temp = _getPreviousTemperatureOfRow(df, row)
     next_temp = _getNextTemperatureOfRow(df, row)
